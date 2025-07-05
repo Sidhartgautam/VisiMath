@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>🧮 Math Solver</title>
+    <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+    <script id="MathJax-script" async
+      src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js">
+    </script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #f4f4f4;
+            color: #333;
+        }
+        h1, h2, h3 {
+            color: #2c3e50;
+        }
+        form {
+            background-color: #fff;
+            padding: 25px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .input-section {
+            border: 1px solid #ddd;
+            padding: 20px;
+            margin-bottom: 25px;
+            background-color: #fafafa;
+            border-radius: 5px;
+        }
+        .or-divider {
+            text-align: center;
+            margin: 20px 0;
+            font-weight: bold;
+            color: #555;
+        }
+        label {
+            font-weight: bold;
+            margin-bottom: 5px;
+            display: block;
+        }
+        input[type="text"], input[type="file"] {
+            width: calc(100% - 20px);
+            padding: 10px;
+            margin-bottom: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+        button[type="submit"] {
+            background-color: #28a745;
+            color: white;
+            padding: 12px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background-color 0.3s ease;
+        }
+        button[type="submit"]:hover {
+            background-color: #218838;
+        }
+        .steps, .result {
+            background-color: #fff;
+            padding: 25px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-top: 25px;
+        }
+        ol li {
+            margin-bottom: 10px;
+            padding-left: 5px;
+        }
+        pre {
+            background-color: #eee;
+            padding: 15px;
+            border-radius: 4px;
+            overflow-x: auto;
+        }
+        .error {
+            color: red;
+            font-weight: bold;
+        }
+        /* MathJax specific styling for LaTeX-like display */
+        .steps li span {
+            display: inline-block; /* To ensure MathJax renders correctly within list items */
+        }
+
+        /* Styles for disabled state */
+        .disabled-input-section {
+            opacity: 0.6;
+            pointer-events: none; /* Prevents clicks on elements inside */
+        }
+    </style>
+</head>
+<body>
+    <h1>🧮 Math Solver</h1>
+    <p>Upload a handwritten equation image or enter an equation manually below.</p>
+
+    <form method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+
+        <div class="input-section" id="image-upload-section">
+            <h3>Option 1: Upload an Image</h3>
+            <div id="image-input-field">
+                {{ form.as_p }}
+            </div>
+        </div>
+
+        <div class="or-divider">OR</div>
+
+        <div class="input-section" id="manual-input-section">
+            <h3>Option 2: Enter Equation Manually</h3>
+            <label for="manual_equation">Equation:</label><br>
+            <input type="text" id="manual_equation" name="manual_equation" placeholder="e.g. x**2 + 3*x - 4 = 0" style="width: 100%;"><br>
+            <small id="input-priority-hint">Enter either an image OR a manual equation. Manual input takes priority.</small>
+        </div>
+
+        <button type="submit">Solve</button>
+    </form>
+
+    {% if steps %}
+        <div class="steps">
+            <h2>Processing Steps:</h2>
+            <ol>
+            {% for step in steps %}
+                <li><span>{{ step|safe }}</span></li>
+            {% endfor %}
+            </ol>
+        </div>
+    {% endif %}
+
+    {% if result %}
+        <div class="result">
+            <h2>Solution:</h2>
+            <pre>{{ result }}</pre>
+        </div>
+    {% endif %}
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const manualInput = document.getElementById('manual_equation');
+            // Assuming the image input field's ID is 'id_image' (Django's default for a field named 'image')
+            const imageFileInput = document.getElementById('id_image');
+            const imageUploadSection = document.getElementById('image-upload-section');
+            const manualInputSection = document.getElementById('manual-input-section');
+            const inputPriorityHint = document.getElementById('input-priority-hint');
+
+            function updateInputStates() {
+                // Check if manual input has content
+                if (manualInput.value.trim() !== '') {
+                    // Disable image upload section
+                    imageUploadSection.classList.add('disabled-input-section');
+                    imageFileInput.disabled = true;
+                    // Update hint
+                    inputPriorityHint.innerHTML = 'Manual input active. Image upload disabled for this submission.';
+                }
+                // Check if an image file has been selected
+                else if (imageFileInput.value.trim() !== '') {
+                    // Disable manual input section
+                    manualInputSection.classList.add('disabled-input-section');
+                    manualInput.disabled = true;
+                    // Update hint
+                    inputPriorityHint.innerHTML = 'Image selected. Manual input disabled for this submission.';
+                }
+                // If neither is filled, enable both
+                else {
+                    imageUploadSection.classList.remove('disabled-input-section');
+                    imageFileInput.disabled = false;
+                    manualInputSection.classList.remove('disabled-input-section');
+                    manualInput.disabled = false;
+                    inputPriorityHint.innerHTML = 'Enter either an image OR a manual equation. Manual input takes priority.';
+                }
+            }
+
+            // Attach event listeners
+            manualInput.addEventListener('input', updateInputStates); // 'input' for real-time typing
+            imageFileInput.addEventListener('change', updateInputStates); // 'change' for when a file is selected/cleared
+
+            // Call on page load to handle initial state (e.g., if form retains values after error)
+            updateInputStates();
+        });
+    </script>
+</body>
+</html>
